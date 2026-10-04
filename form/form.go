@@ -379,7 +379,7 @@ func mapEncoder(values *Values, v reflect.Value, keyParts []string, _ bool, _ *f
 		// if never set, any value found in a map has been explicitly set, so
 		// we always make an effort to encode them, even if a zero value
 		// (that's why we pass through `true` here).
-		reflectValue(values, v.MapIndex(reflect.ValueOf(key)), true, append(keyParts, key))
+		reflectValue(values, v.MapIndex(reflect.ValueOf(key).Convert(v.Type().Key())), true, append(keyParts, key))
 	}
 }
 

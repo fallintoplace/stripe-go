@@ -422,6 +422,82 @@ func TestEncodeDeterministically(t *testing.T) {
 	}
 }
 
+func TestEncodeMapStringKeys(t *testing.T) {
+	type mapKey string
+	type namedMap map[mapKey]string
+	data := map[mapKey]string{"b": "second", "a": "first"}
+	value := "value"
+
+	tests := []struct {
+		name string
+		data interface{}
+		want string
+	}{
+		{
+			name: "string keys",
+			data: map[string]string{"b": "second", "a": "first"},
+			want: "a=first&b=second",
+		},
+		{
+			name: "named string keys",
+			data: data,
+			want: "a=first&b=second",
+		},
+		{
+			name: "named map type",
+			data: namedMap{"b": "second", "a": "first"},
+			want: "a=first&b=second",
+		},
+		{
+			name: "pointer to map",
+			data: &data,
+			want: "a=first&b=second",
+		},
+		{
+			name: "nested maps",
+			data: map[mapKey]map[mapKey]string{"outer": data},
+			want: "outer[a]=first&outer[b]=second",
+		},
+		{
+			name: "interface zero values",
+			data: map[mapKey]interface{}{"bool": false, "int": 0, "string": ""},
+			want: "bool=false&int=0&string=",
+		},
+		{
+			name: "escaped key and value",
+			data: map[mapKey]string{"a b&é": "x+y"},
+			want: "a+b%26%C3%A9=x%2By",
+		},
+		{
+			name: "nil map",
+			data: map[mapKey]string(nil),
+		},
+		{
+			name: "empty map",
+			data: map[mapKey]string{},
+		},
+		{
+			name: "nil pointer value",
+			data: map[mapKey]*string{"a": nil, "b": &value},
+			want: "b=value",
+		},
+		{
+			name: "empty string value",
+			data: map[mapKey]string{"a": ""},
+			want: "a=",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			form := &Values{}
+			assert.NotPanics(t, func() {
+				AppendTo(form, tt.data)
+			})
+			assert.Equal(t, tt.want, form.Encode())
+		})
+	}
+}
+
 func TestEncodeMapNonStringKey(t *testing.T) {
 	// Disable strict mode for this test, so the non-string key is ignored.
 	Strict = false
